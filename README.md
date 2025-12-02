@@ -85,21 +85,13 @@ Cada execução envia uma nova mensagem.
 
 ## Dicionário de Conceitos
 
-  -------------------------------------------------------------------------
-  Conceito        Analogia Simples            Explicação Técnica
-  --------------- --------------------------- -----------------------------
-  **SQS (Queue)** Caixa de correio            Processamento assíncrono e
-                                              desacoplado
+| Conceito        | Analogia Simples | Explicação Técnica |
+|-----------------|------------------|--------------------|
+| **SQS (Queue)** | Caixa de correio | Processamento assíncrono e desacoplado. |
+| **Terraform**   | Planta da casa   | Infraestrutura como código (IaC). |
+| **JWT**         | Lacre de cera    | Autenticação e integridade dos dados enviados. |
+| **Polling**     | “Já chegou?”     | Checagem periódica por novas mensagens na fila. |
 
-  **Terraform**   Planta da casa              Infraestrutura como código
-
-  **JWT**         Lacre de cera               Autenticação e integridade
-                                              dos dados
-
-  **Polling**     "Já chegou?"                Checagem periódica por novas
-                                              mensagens
-                                              
-  -------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 ## Anotações de estudos
