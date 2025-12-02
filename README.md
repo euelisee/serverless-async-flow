@@ -98,6 +98,7 @@ Cada execução envia uma nova mensagem.
 
   **Polling**     "Já chegou?"                Checagem periódica por novas
                                               mensagens
+                                              
   -------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
