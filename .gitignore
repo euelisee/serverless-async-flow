@@ -25,3 +25,11 @@ crash.log
 
 # Localstack
 localstack/volume/
+
+# Arquivos de sistema do Mac (Obrigatório!)
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Arquivos de ambiente (Segurança básica, caso crie depois)
+.env
