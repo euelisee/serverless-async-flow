@@ -11,16 +11,14 @@ de envio e recebimento de mensagens seguro.
 O sistema funciona como um correio seguro. Um serviço envia uma carta
 lacrada, e outro serviço a lê quando possível.
 
-``` mermaid
-graph LR
-    A[Lambda Sender] -- 1. Busca Dados & Gera JWT --> B(Envelope Seguro)
-    B -- 2. Envia para Fila --> C{AWS SQS Queue}
-    C -- 3. Armazena Mensagem --> C
-    D[Lambda Receiver] -- 4. Polling / Pergunta se tem msg --> C
-    C -- 5. Entrega Mensagem --> D
-    D -- 6. Valida Token & Processa --> E[Logs / Ação]
-```
 ![alt text](image.png)
+
+Requisitos simples:
+- Lambda 1 envia mensagem para a queue
+- Queue encaminha essa mensagem para a Lambda 2
+- Lambda 2 executa mensagem
+- A mensagem em si pode ser qualquer coisa
+
 
 ## Tech Stack (Ferramentas)
 
