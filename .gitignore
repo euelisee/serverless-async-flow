@@ -1,0 +1,27 @@
+# Node.js
+**/node_modules
+# Logs de npm (geralmente gerados em caso de erro)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+**/dist/
+**/*.js.map
+**/*.d.ts
+**/*.js
+!**/*.zip
+
+# Terraform
+**/*.tfstate
+**/*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+*.backup
+
+# IDEs e Ferramentas
+.vscode/
+
+# Localstack
+localstack/volume/

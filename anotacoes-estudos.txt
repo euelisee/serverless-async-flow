@@ -1,0 +1,102 @@
+1. Terraform (infra/main.tf)
+    O que é: Infraestrutura como Código (IaC).
+    Analogia: Em vez de construir uma casa tijolo por tijolo com a mão, você escreve uma receita mágica e a casa aparece pronta.
+    Por que usamos: Se você apagar tudo e rodar o script de novo, ele recria tudo idêntico em segundos.
+
+2. SQS (A Fila)
+    O que é: Simple Queue Service (Serviço de Fila Simples).
+    Analogia: A caixa de correio ou a sala de espera do médico.
+    Por que usamos: Para Desacoplar. O Agente de Envio não precisa saber se o Agente de Recebimento está acordado. 
+                    Ele só deixa lá e vai embora. Isso evita que o sistema trave.
+
+3. JWT (O Token)
+    O que é: JSON Web Token.
+    Analogia: Um crachá holográfico ou um lacre de cera real numa carta.
+    Por que usamos: Segurança. Garante que a mensagem foi criada por nós e não foi alterada por um hacker no meio do caminho. 
+                    Se o lacre estiver quebrado, a gente joga fora.
+
+4. Polling (O Loop Infinito na Lambda 2)
+    O que é: O ato de verificar repetidamente.
+    Analogia: O Burro do Shrek perguntando: "A gente já chegou? A gente já chegou? A gente já chegou?"
+    Por que usamos: Como estamos rodando no PC local, a Lambda precisa ir ativamente perguntar pra fila se tem novidade.
+                    (obs: Na nuvem real da AWS, a fila que acorda a Lambda, então não precisaríamos desse loop).
+
+###### Elencos do projeto:
+Lambda 1 = servico-envio
+    Quem é: É o Remetente.
+    Onde mora: Na pasta lambdas/servico-envio/src/index.ts.
+    O que faz:
+        Acorda.
+        Pega os dados.
+        Cria o crachá de segurança (JWT).
+        Joga na Fila.
+        Vai dormir (encerra).
+    Analogia: É você escrevendo a carta e colocando na caixa de correio.
+Lambda 2 = servico-recebimento
+    Quem é: É o Destinatário.
+    Onde mora: Na pasta lambdas/servico-recebimento/src/index.ts.
+    O que faz:
+        Fica de plantão olhando a fila (Polling).
+        Pega a mensagem quando ela chega.
+        Confere o crachá (JWT) pra ver se não é falso.
+        Lê o conteúdo ("Processa").
+    Analogia: É a pessoa indo lá na caixa de correio buscar o que chegou pra ele.
+
+#### Entendendo a estrutura dos códigos
+Parte 1: Infraestrutura (Terraform)
+Arquivo: infra/main.tf
+1. Bloco provider "aws" { ... }
+    O que é: É a configuração do "fornecedor". Dizemos ao Terraform quem vai criar as coisas para nós (neste caso, a AWS, mas simulada localmente).
+    Analogia: É como escolher a empreiteira que vai construir sua casa. Você liga para a "Empreiteira AWS" e 
+              diz: "Oi, eu quero construir, mas usem esse endereço aqui (Localstack) e não o escritório principal de vocês".
+    Por que: O Terraform é agnóstico (pode criar coisas no Google, Azure, AWS).
+             Precisamos dizer explicitamente: "Use o plugin da AWS e aponte para o meu computador (localhost), não para a nuvem real".
+
+2. Bloco resource "aws_sqs_queue" ...
+    O que é: A definição do recurso. É aqui que pedimos para criar a Fila SQS de verdade.
+    Analogia: É a planta da caixa de correio. Você diz: "Quero uma caixa azul, de metal, com o nome fila-pedidos instalada na frente da casa".
+    Por que: Sem isso, não existe o canal de comunicação. O código TypeScript tentaria enviar mensagem para o "nada" e daria erro.
+
+Parte 2: Código do Remetente (TypeScript)
+Arquivo: servico-envio/src/index.ts
+1. import { SQSClient ... }
+    O que é: Importação de bibliotecas (SDK). Estamos pegando ferramentas prontas da AWS.
+    Analogia: É como pegar a caixa de ferramentas antes de começar a trabalhar. Você não vai fabricar um martelo do zero, você pega um martelo pronto da caixa aws-sdk.
+    Por que: Não queremos escrever código complexo de rede (HTTP, TCP) na mão. O SDK já tem funções prontas como .send() que facilitam a vida.
+
+2. const buscarNoBanco = async () ... (Mock)
+    O que é: Uma função assíncrona que retorna um objeto fixo (Mock).
+    Analogia: É um "faz de conta". Como não temos uma lista telefônica real (banco de dados) agora, você anota os dados num papel e finge que leu da lista.
+    Por que: Para testar a lógica do sistema sem precisar subir um container pesado de banco de dados (Postgres/MySQL) só para isso. Foca no problema principal: a fila.
+
+3. jwt.sign(payload, segredo)
+    O que é: Assinatura do Token. Pega os dados (JSON) e mistura com uma senha secreta para criar uma string criptografada.
+    Analogia: É o lacre de cera real numa carta medieval. Você derrete a cera e carimba com seu anel. Se alguém tentar abrir no caminho, o lacre quebra.
+    Por que: Garante Autenticidade e Integridade. Quem receber sabe que foi você quem mandou e que ninguém mudou o texto no meio do caminho.
+
+4. SendMessageCommand
+    O que é: O comando específico de envio da AWS SQS.
+    Analogia: É o ato de preencher o envelope, colocar o selo e soltar na fenda da caixa do correio.
+    Por que: É a instrução final que tira o dado da sua aplicação (memória RAM) e persiste na infraestrutura (Fila SQS).
+
+Parte 3: Código do Destinatário (TypeScript)
+Arquivo: servico-recebimento/src/index.ts
+1. while (true) { ... } (Loop Infinito)
+    O que é: Um loop de repetição que nunca para.
+    Analogia: É o porteiro do prédio que fica 24h na guarita olhando pra rua. Ele nunca vai pra casa, fica sempre esperando alguém chegar.
+    Por que: Como estamos rodando Localmente, não existe o "evento mágico" da nuvem que acorda a função. Precisamos manter o programa rodando (Polling) para ele verificar ativamente se tem trabalho.
+
+2. ReceiveMessageCommand com WaitTimeSeconds
+    O que é: O pedido de leitura da fila. O WaitTimeSeconds é o "Long Polling".
+    Analogia: O porteiro pergunta pro carteiro: "Tem carta?". Se o carteiro disser não, o porteiro espera 5 segundos ali parado antes de perguntar de novo, pra não ficar chato.
+    Por que: Reduz o uso de processador e rede. Em vez de perguntar mil vezes por segundo, ele pergunta, espera um pouco se estiver vazio, e pergunta de novo.
+
+3. jwt.verify(token, segredo)
+    O que é: Validação do Token. Tenta abrir a criptografia usando a mesma senha que foi usada para fechar.
+    Analogia: O porteiro olha o lacre de cera. Ele pega o anel de verificação e vê se encaixa perfeitamente no desenho da cera. Se encaixar, a carta é confiável.
+    Por que: Segurança Zero Trust. Nunca confiamos no que vem de fora sem verificar antes.
+
+4. DeleteMessageCommand
+    O que é: Apagar a mensagem da fila após o processamento.
+    Analogia: Depois que você lê a conta de luz e paga, você joga o papel fora ou arquiva na gaveta de "pagos". Você não deixa na caixa de correio de novo.
+    Por que: Se não apagarmos, a fila acha que a mensagem não foi entregue (ou que deu erro) e manda ela de novo (retry). Isso causaria processamento duplicado (ex: cobrar o cliente duas vezes).

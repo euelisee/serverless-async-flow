@@ -1,43 +1,108 @@
-# Serverless Async Flow — Cafeteria Message System
+# Projeto de Estudos: Fluxo Assíncrono com Node.js, AWS SQS e Terraform
 
-Este projeto é um estudo prático para aprender **Node.js**, **TypeScript**, **AWS Lambda**, **SQS (fila)**, **Localstack** e **Terraform**, simulando o fluxo de pedidos de uma cafeteria.
+Este é um projeto prático para aprender Terraform e demonstrar a comunicação entre
+**Microserviços** usando uma arquitetura orientada a eventos
+(Event-Driven). Simulei um ambiente AWS localmente para criar um fluxo
+de envio e recebimento de mensagens seguro.
 
-A ideia é criar uma comunicação **assíncrona** entre duas Lambdas por meio de uma fila, onde:
+------------------------------------------------------------------------
+## Arquitetura e Fluxo
 
-- A **Lambda 1** recebe um “pedido” (via Postman)  
-- Envia o pedido para a **fila (SQS)**  
-- A **Lambda 2** consome essa mensagem e “processa” o pedido  
+O sistema funciona como um correio seguro. Um serviço envia uma carta
+lacrada, e outro serviço a lê quando possível.
 
-Tudo localmente usando **Localstack**, sem custo e sem depender da AWS real.
+``` mermaid
+graph LR
+    A[Lambda Sender] -- 1. Busca Dados & Gera JWT --> B(Envelope Seguro)
+    B -- 2. Envia para Fila --> C{AWS SQS Queue}
+    C -- 3. Armazena Mensagem --> C
+    D[Lambda Receiver] -- 4. Polling / Pergunta se tem msg --> C
+    C -- 5. Entrega Mensagem --> D
+    D -- 6. Valida Token & Processa --> E[Logs / Ação]
+```
+![alt text](image.png)
+
+## Tech Stack (Ferramentas)
+
+-   **Node.js & TypeScript**: A linguagem e o motor da lógica.\
+-   **Terraform (IaC)**: Para criar a infraestrutura (a Fila SQS) via
+    código, sem cliques manuais.\
+-   **Localstack (Docker)**: Para simular a AWS dentro do computador sem
+    custos.\
+-   **AWS SDK v3**: Para conectar o código à infraestrutura.\
+-   **JWT (JSON Web Token)**: Para garantir a segurança e integridade
+    das mensagens.
+
+------------------------------------------------------------------------
 
 ## Estrutura do Projeto
+
+    ├── docker-compose.yml       # O Simulador da AWS (Localstack)
+    ├── setup.sh                 # Script de automação (Inicia tudo)
+    ├── infra/                   # Onde o Terraform cria a Fila SQS
+    └── lambdas/
+        ├── servico-envio/       # O Remetente (Gera Token -> Envia SQS)
+        └── servico-recebimento/ # O Destinatário (Lê SQS -> Valida -> Loga)
+
+------------------------------------------------------------------------
+
+## Como Rodar o Projeto
+### Pré-requisitos
+
+-   Docker Desktop (Deve estar aberto e rodando)
+-   Node.js instalado
+-   Terraform instalado
+
+### Passo a Passo Automático
+Dê permissão ao script:
+
+``` bash
+chmod +x setup.sh
 ```
-serverless-async-flow
-│
-├── lambdas/
-│   ├── order-request-lambda/
-│   └── order-processor-lambda/
-│
-├── infra/
-├── localstack/
-├── tsconfig.base.json
-├── package.json
-└── README.md
+
+Execute tudo:
+
+``` bash
+./setup.sh
 ```
 
-## Tech Stack
+### Rodando o fluxo
+#### Terminal 1 (Ouvinte)
 
-- Node.js + TypeScript  
-- AWS Lambda  
-- AWS SQS  
-- Terraform  
-- Localstack  
-- Postman  
-- Docker  
+``` bash
+cd lambdas/servico-recebimento
+npm start
+```
 
-## Fluxo de Funcionamento
+#### Terminal 2 (Remetente)
 
-1. POST → Lambda 1  
-2. Lambda 1 → envia mensagem pra fila  
-3. Fila → entrega pra Lambda 2  
-4. Lambda 2 → processa/loga o pedido  
+``` bash
+cd lambdas/servico-envio
+npm start
+```
+
+Cada execução envia uma nova mensagem.
+
+------------------------------------------------------------------------
+
+## Dicionário de Conceitos
+
+  -------------------------------------------------------------------------
+  Conceito        Analogia Simples            Explicação Técnica
+  --------------- --------------------------- -----------------------------
+  **SQS (Queue)** Caixa de correio            Processamento assíncrono e
+                                              desacoplado
+
+  **Terraform**   Planta da casa              Infraestrutura como código
+
+  **JWT**         Lacre de cera               Autenticação e integridade
+                                              dos dados
+
+  **Polling**     "Já chegou?"                Checagem periódica por novas
+                                              mensagens
+  -------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+## Anotações de estudos
+
+O arquivo anotacoes-estudos.txt é um arquivo de entendimento dos conceitos e explicando o código conforme eu ia aprendendo e entendendo os conceitos. E o coloquei aqui pra ficar mais simples de relembrar conceitos ou estrutura caso possa esquecer.
